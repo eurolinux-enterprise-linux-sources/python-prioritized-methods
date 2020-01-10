@@ -4,7 +4,7 @@
 
 Name:           python-prioritized-methods
 Version:        0.2.1
-Release:        5.1%{?dist}
+Release:        5.2%{?dist}
 Summary:        An extension to PEAK-Rules to prioritize methods in order
 
 Group:          Development/Languages
@@ -17,7 +17,12 @@ BuildArch:      noarch
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools-devel
 
+# following for UpdateTimestamps sanitization function
+BuildRequires:  diffstat
+
 Requires:       python-peak-rules
+
+Patch0:         bz1321133-prioritized_methods-fix-requires.patch
 
 
 %description
@@ -37,6 +42,22 @@ write a more specific rule or when it is not feasible.
 %prep
 %setup -q -n %{packagename}-%{version}
 
+# -- following borrowed from python-simplejon.el5 --
+# Update timestamps on the files touched by a patch, to avoid non-equal
+# .pyc/.pyo files across the multilib peers within a build, where "Level"
+# is the patch prefix option (e.g. -p1)
+UpdateTimestamps() {
+  Level=$1
+  PatchFile=$2
+  # Locate the affected files:
+  for f in $(diffstat $Level -l $PatchFile); do
+    # Set the files to have the same timestamp as that of the patch:
+    touch -r $PatchFile $f
+  done
+}
+%patch0 -p1
+UpdateTimestamps -p1 %{PATCH0}
+
 %build
 %{__python} setup.py build
 
@@ -52,6 +73,11 @@ rm -rf %{buildroot}
 %{python_sitelib}/*
 
 %changelog
+* Thu Mar 24 2016 Jan Pokorny <jpokorny@redhat.com> - 0.2.1-5.2
+- Fix install_requires contains forward-incompatible
+  "PEAK-Rules>=0.5a1.dev-r2562,==dev" specification
+Resolves: rhbz#1321133
+
 * Mon Nov 30 2009 Dennis Gregorovic <dgregor@redhat.com> - 0.2.1-5.1
 - Rebuilt for RHEL 6
 
